@@ -1,7 +1,7 @@
-// CarScene.jsx
 import React, { useRef, useState, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
+import { useAppContext } from '../context/AppContext' // Import the context
 
 export default function Car(props) {
   const carRef = useRef()
@@ -11,6 +11,7 @@ export default function Car(props) {
   const rrWheel = useRef()
 
   const { nodes, materials } = useGLTF('/models/car.glb')
+  const { floorBounds } = useAppContext() // Access floorBounds from the context
 
   const keysPressed = useRef({})
   const [rotationY, setRotationY] = useState(0)
@@ -50,13 +51,20 @@ export default function Car(props) {
     // Apply friction
     newSpeed *= 0.98
 
-    // Move and rotate the car
-    const car = carRef.current
-    if (car) {
-      car.position.x += Math.sin(newRotation) * newSpeed
-      car.position.z += Math.cos(newRotation) * newSpeed
-      car.rotation.y = newRotation
+    // Calculate potential new position
+    const newPosX = carRef.current.position.x + Math.sin(newRotation) * newSpeed
+    const newPosZ = carRef.current.position.z + Math.cos(newRotation) * newSpeed
+
+    // Prevent movement outside floor bounds
+    if (newPosX >= floorBounds.xMin && newPosX <= floorBounds.xMax) {
+      carRef.current.position.x = newPosX
     }
+    if (newPosZ >= floorBounds.zMin && newPosZ <= floorBounds.zMax) {
+      carRef.current.position.z = newPosZ
+    }
+
+    // Apply the rotation
+    carRef.current.rotation.y = newRotation
 
     // Spin the wheels
     const wheelSpin = newSpeed * delta * 20
